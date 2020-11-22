@@ -99,24 +99,25 @@ industy_types = {
  }
 
 ##Testing area
-library = RecipeLibrary("recipes.json")
+if __name__ == "__main__":
+    library = RecipeLibrary("recipes.json")
 
-while True:
-    item_name = input("Name of item: ")
+    while True:
+        item_name = input("Name of item: ")
 
-    results = library.find_recipe_by_name(item_name,1)
-    i=0
-    print("Select Item from search result")
-    if results != None:
-        for r in results:
-            i = i+1
-            print("{}. {}".format(i,r.name))
-    else:
-        print("Error item not found")
+        results = library.find_recipe_by_name(item_name,1)
+        i=0
+        print("Select Item from search result")
+        if results != None:
+            for r in results:
+                i = i+1
+                print("{}. {}".format(i,r.name))
+        else:
+            print("Error item not found")
 
-    choice = int(input("Select # :"))
-    recipe = results[choice-1]
-    quantity = int(input("Number of items: "))
-    print(recipe.requirements())
+        choice = int(input("Select # :"))
+        recipe = results[choice-1]
+        quantity = int(input("Number of items: "))
+        print(recipe.requirements())
 
 

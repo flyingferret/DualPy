@@ -1,6 +1,6 @@
 import math
 import json
-
+byProducts = ['Hydrogen Pure', 'Oxygen Pure']
 class Recipe:
     def __init__(self,name,init_data):
         self.name = name
@@ -11,7 +11,7 @@ class Recipe:
         self.skill = init_data["skill"]
         self.industries = init_data["industries"]
         self.outputQuantity = init_data["outputQuantity"]
-
+        self.time = init_data["time"]
         self.raw_input = init_data["input"]
         self.raw_byproducts = init_data["byproducts"]
 
@@ -23,29 +23,34 @@ class Recipe:
 
     #populate input and outputs with objects from recipes library once initalised
     def populate(self,library):
-        self.input = {}
+        self.input = []
         self.byproducts = {}
         for i in self.raw_input:
-           self.input.update({self.find_recipe(i,library):self.raw_input[i]})
+            r = self.find_recipe(i,library)
+            quantity = self.raw_input[i]
+            self.input.append(CraftingRequirment(r,quantity))
         for i in self.raw_byproducts:
            self.byproducts.update({self.find_recipe(i,library):self.raw_byproducts[i]})
 
     #return actual numbers per unit
     def requirements(self,quantity=0):
         if quantity == 0: quantity=self.outputQuantity
-        requirements = {}
+        craftingRequirments = []
+        # craftingRequirments.append(CraftingRequirment(self,quantity))
+
         for i in self.input:
-            amount = self.input[i]*quantity/self.outputQuantity
-            batchs = math.ceil(amount/i.outputQuantity)
-            requirements.update({ i:{"amount":amount,"batchs":batchs}})
-            sub_req = i.requirements(self.input[i]*quantity)
-            for sr in sub_req:
-                if sr in requirements:
-                    requirements[sr]["amount"] = requirements[sr]["amount"] + sub_req[sr]["amount"]
-                    requirements[sr]["batchs"] = requirements[sr]["batchs"] + sub_req[sr]["batchs"]
-                else:
-                    requirements.update({sr:sub_req[sr]})
-        return requirements
+            craftingRequirments.append(CraftingRequirment(i.recipe,i.quantity*quantity))
+            sub_req = i.recipe.requirements(i.quantity*quantity/i.recipe.outputQuantity)
+            for r in sub_req:
+                #if not already in craftreq add it
+                found = False
+                for c in craftingRequirments:
+                    if c.recipe.name == r.recipe.name:
+                        c.increaseQuanity(r.quantity)
+                        found = True
+                if not found :
+                    craftingRequirments.append(r)
+        return craftingRequirments
 
     def crafting_que(self,quantity=0):
         pass
@@ -67,6 +72,7 @@ class RecipeLibrary:
 
         for r in self.recipes:
             r.populate(self.recipes)
+
     #returns list of recipe by give item_name, searchType: 0 = Exact,1 = Contains
     def find_recipe_by_name(self,item_name,searchType=0):
         result = []
@@ -78,6 +84,27 @@ class RecipeLibrary:
                 if r.name.lower().find(item_name.lower()) > -1:
                     result.append(r)
         return result
+
+class CraftingRequirment:
+    def __init__(self, recipe,quantity=0):
+        self.recipe = recipe
+        self.quantity = 0
+        self.time = 0
+        self.batchs = 0
+        self.increaseQuanity(quantity)
+
+    def increaseQuanity(self,quantity):
+        if(self.recipe.name not in byProducts):
+            self.quantity = self.quantity + quantity
+            self.batchs = math.ceil(self.quantity / self.recipe.outputQuantity)
+            self.time = self.recipe.time * self.batchs
+
+    def __str__(self):
+        return self.recipe.name
+
+    def __repr__(self):
+        return  self.recipe.name
+
 
 industy_types = {
  'ore',
@@ -118,6 +145,12 @@ if __name__ == "__main__":
         choice = int(input("Select # :"))
         recipe = results[choice-1]
         quantity = int(input("Number of items: "))
-        print(recipe.requirements())
+
+        requirements = recipe.requirements(quantity)
+        totalTime = 0
+        for req in requirements:
+            totalTime = totalTime + req.time
+            print("{} Amount: {:.0f} # Batches: {} Time: {:.0f}".format(req.recipe.name,req.quantity,req.batchs,req.time))
+        print("Total Time: {:.0f} sec".format(totalTime))
 
 
